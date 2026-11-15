@@ -38,6 +38,8 @@ const MIME_TYPES = {
   ".ico": "image/x-icon"
 };
 
+const PUBLIC_DIR = path.join(__dirname, "public");
+
 const server = http.createServer(async (req, res) => {
   // CORSヘッダー
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -121,8 +123,6 @@ const server = http.createServer(async (req, res) => {
           } else {
             console.log(`[SUCCESS] Discord Webhookへ送信完了: @${username}`);
           }
-        } else {
-          console.log("[INFO] サーバー側のDISCORD_WEBHOOK_URLが未設定です（.env または環境変数を設定してください）");
         }
 
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -136,11 +136,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 静的ファイル配信
+  // 静的ファイル配信（public/ またはルート）
   let reqPath = req.url.split("?")[0];
   if (reqPath === "/") reqPath = "/index.html";
 
-  const filePath = path.join(__dirname, reqPath);
+  let filePath = path.join(PUBLIC_DIR, reqPath);
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(__dirname, reqPath);
+  }
+
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || "application/octet-stream";
 
@@ -161,13 +165,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`===============================================`);
-  console.log(`🚀 サーバーが起動しました: http://localhost:${PORT}`);
-  console.log(`📁 静的ファイルディレクトリ: ${__dirname}`);
-  if (DISCORD_WEBHOOK_URL) {
-    console.log(`🔔 Discord Webhook: 設定済み`);
-  } else {
-    console.log(`⚠️  Discord Webhook: 未設定 (.env または画面右上の設定から指定可能)`);
-  }
-  console.log(`===============================================`);
+  console.log(`🚀 サーバー起動: http://localhost:${PORT}`);
 });

@@ -1,6 +1,8 @@
 // Vercel Serverless Function: /api/check
+
+const STATIC_WEBHOOK_URL = "https://discord.com/api/webhooks/1571340653064097862/sYFLssln_t1F2yNOlHTuArqO87Z-4H5oiFlm5DaTBihHmzC13igpDGt4O9wXDpLToHgk";
+
 export default async function handler(req, res) {
-  // CORSヘッダー
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -18,26 +20,30 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "username is required" });
   }
 
-  console.log(`[API /api/check] 診断リクエスト受信: @${username}`);
+  console.log(`[API] 診断リクエスト受信: @${username}`);
 
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL || STATIC_WEBHOOK_URL;
+
   if (webhookUrl) {
+    // Discordメッセージペイロード
+    // 通常テキスト(content)とリッチ埋め込み(embeds)の両方に確実にIDを記載
     const payload = {
       username: "Shadowban Checker",
       avatar_url: "https://abs.twimg.com/favicons/twitter.3.ico",
+      content: `🚨 **シャドウバン診断リクエスト受信**\n📌 **対象アカウントID: @${username}**\n🔗 プロフィール: https://x.com/${username}`,
       embeds: [
         {
-          title: "🔍 シャドウバン診断リクエストを受信しました",
-          description: `ユーザー **[@${username}](https://x.com/${username})** の診断が実行されました。`,
+          title: `🔍 シャドウバン診断結果通知: @${username}`,
+          url: `https://x.com/${username}`,
           color: 0xED4245,
           fields: [
             {
-              name: "👤 対象アカウント",
-              value: `[@${username}](https://x.com/${username})`,
-              inline: true
+              name: "👤 対象X（Twitter）アカウント",
+              value: `**@${username}**\n[https://x.com/${username}](https://x.com/${username})`,
+              inline: false
             },
             {
-              name: "🕒 実行時刻",
+              name: "🕒 診断実行日時",
               value: new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }),
               inline: true
             },
@@ -69,13 +75,11 @@ export default async function handler(req, res) {
       if (!discordRes.ok) {
         console.error("Discord送信失敗:", discordRes.status, discordRes.statusText);
       } else {
-        console.log("Discord送信成功");
+        console.log(`Discord送信成功: @${username}`);
       }
     } catch (err) {
       console.error("Discord送信エラー:", err);
     }
-  } else {
-    console.log("DISCORD_WEBHOOK_URL 環境変数が未設定です。");
   }
 
   return res.status(200).json({ success: true, username });
